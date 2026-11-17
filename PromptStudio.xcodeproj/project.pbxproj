@@ -1,0 +1,265 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		57F794C1211BB10FF723EEA9 /* Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6173A61E7FC3333FD61D13DC /* Brand.swift */; };
+		3554979181A458AFC9124890 /* PromptStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989CCB80ADCA5125F048AA54 /* PromptStudioApp.swift */; };
+		8DFFBEA6AD57E97AE0ABA5EA /* AppleModelClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69475D767E0F9CBF7E8436CE /* AppleModelClient.swift */; };
+		1E166A458AF7414197FE34A2 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23308669148973FE14F8A4F9 /* HistoryStore.swift */; };
+		D2BA9776D49F5B75BDAB99DF /* LocalOllamaClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B800EB6EF680B5F7B49370A2 /* LocalOllamaClient.swift */; };
+		884035C8CB8A472F32917578 /* MacActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 544B0490A118C9846D874A2B /* MacActions.swift */; };
+		215055E55736DA07CB7BCDF6 /* NewsFeedParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DCEC78A879DDBDE0845C79B /* NewsFeedParser.swift */; };
+		38A8EE5AEF0FC9795FF2F901 /* NewsSources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743E6CFA4F6AC5A7AA24969A /* NewsSources.swift */; };
+		5E6BF26056FC54ABD84F033A /* NewsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AFB7B57D39EB53A25A82EFD /* NewsStore.swift */; };
+		F85A7DA91F5FE367B3A5D9F6 /* StudioModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBD4D12E4E05F9384F4C37C /* StudioModel.swift */; };
+		980DBC64018AE77DEADF49EF /* BrowserWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9C20903A141739631923B76 /* BrowserWorkspace.swift */; };
+		D80733758CAC9A4B21FD29E2 /* ExpandedOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C549F311B2468D1F0C7BB9AA /* ExpandedOutputView.swift */; };
+		F9E9DBC8D5E52EA608E1FE6A /* HomeDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149941385970F2B691A72701 /* HomeDashboard.swift */; };
+		C189D45752C47A2EAC9E0402 /* NewsSourcesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81A79BF5B1521471C2E77A8C /* NewsSourcesView.swift */; };
+		10788D19C0A37C8C111C5815 /* PromptChatPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7742964B6DA6A1CBCA7DFCBA /* PromptChatPanel.swift */; };
+		51855FA7C199AB157F3B25EF /* PromptOutputPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0107E24B32EDD8D6BABE8A /* PromptOutputPanel.swift */; };
+		DBA707B3B78CDA93CA0A6ADE /* QuickPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3430D884BD3EE72B589F1356 /* QuickPromptView.swift */; };
+		DBB170D28B7CFC7E44BE465F /* StudioRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9598DF9E58271A50A88E3F /* StudioRootView.swift */; };
+		DAEB46A968E645E557E9F337 /* StudioSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7BC2C7E2A172A59F42FC98 /* StudioSidebar.swift */; };
+		4C0C75D007524CECEC4550D1 /* LocalModelDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C93D68229510D5AF9B5081D /* LocalModelDiscovery.swift */; };
+		74956F7CF0EDB468A79D4222 /* PromptPostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4A8C148030289D0537CB48 /* PromptPostProcessor.swift */; };
+		725CA2DAECBF69A462E42A35 /* PromptRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C68304E7549397AA5EEE586 /* PromptRules.swift */; };
+		E619E3210EEA8A291F6F6A25 /* PromptTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36EE03A4885104C81FEFC159 /* PromptTypes.swift */; };
+		5DA14173F1FC470A8DA90199 /* PromptValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C20C34B136D2430F5AB905 /* PromptValidator.swift */; };
+		A3A784EDA1498EFB770F4F69 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4AF57FD163046E7C1831E244 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		6173A61E7FC3333FD61D13DC /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Brand.swift"; sourceTree = "<group>"; };
+		989CCB80ADCA5125F048AA54 /* PromptStudioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PromptStudioApp.swift"; sourceTree = "<group>"; };
+		69475D767E0F9CBF7E8436CE /* AppleModelClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppleModelClient.swift"; sourceTree = "<group>"; };
+		23308669148973FE14F8A4F9 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HistoryStore.swift"; sourceTree = "<group>"; };
+		B800EB6EF680B5F7B49370A2 /* LocalOllamaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalOllamaClient.swift"; sourceTree = "<group>"; };
+		544B0490A118C9846D874A2B /* MacActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MacActions.swift"; sourceTree = "<group>"; };
+		9DCEC78A879DDBDE0845C79B /* NewsFeedParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewsFeedParser.swift"; sourceTree = "<group>"; };
+		743E6CFA4F6AC5A7AA24969A /* NewsSources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewsSources.swift"; sourceTree = "<group>"; };
+		0AFB7B57D39EB53A25A82EFD /* NewsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewsStore.swift"; sourceTree = "<group>"; };
+		3CBD4D12E4E05F9384F4C37C /* StudioModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StudioModel.swift"; sourceTree = "<group>"; };
+		F9C20903A141739631923B76 /* BrowserWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BrowserWorkspace.swift"; sourceTree = "<group>"; };
+		C549F311B2468D1F0C7BB9AA /* ExpandedOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExpandedOutputView.swift"; sourceTree = "<group>"; };
+		149941385970F2B691A72701 /* HomeDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeDashboard.swift"; sourceTree = "<group>"; };
+		81A79BF5B1521471C2E77A8C /* NewsSourcesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewsSourcesView.swift"; sourceTree = "<group>"; };
+		7742964B6DA6A1CBCA7DFCBA /* PromptChatPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PromptChatPanel.swift"; sourceTree = "<group>"; };
+		DD0107E24B32EDD8D6BABE8A /* PromptOutputPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PromptOutputPanel.swift"; sourceTree = "<group>"; };
+		3430D884BD3EE72B589F1356 /* QuickPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "QuickPromptView.swift"; sourceTree = "<group>"; };
+		0F9598DF9E58271A50A88E3F /* StudioRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StudioRootView.swift"; sourceTree = "<group>"; };
+		2F7BC2C7E2A172A59F42FC98 /* StudioSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StudioSidebar.swift"; sourceTree = "<group>"; };
+		7C93D68229510D5AF9B5081D /* LocalModelDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalModelDiscovery.swift"; sourceTree = "<group>"; };
+		0D4A8C148030289D0537CB48 /* PromptPostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PromptPostProcessor.swift"; sourceTree = "<group>"; };
+		0C68304E7549397AA5EEE586 /* PromptRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PromptRules.swift"; sourceTree = "<group>"; };
+		36EE03A4885104C81FEFC159 /* PromptTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PromptTypes.swift"; sourceTree = "<group>"; };
+		F3C20C34B136D2430F5AB905 /* PromptValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PromptValidator.swift"; sourceTree = "<group>"; };
+		D0F98F4159EFDA9A0679BAF3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+		5E7B255EFA7457628D9F3863 /* PromptStudio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "PromptStudio.entitlements"; sourceTree = "<group>"; };
+		4AF57FD163046E7C1831E244 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1049A9000660D9A3E911B791 /* PromptStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PromptStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		DF891E785808226D241F246E /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				CF8D0BD4B75E8C2C174692A5 /* App */,
+				FC8F5A85394B0D5FF7E93AFA /* PromptStudioCore */,
+				00C45FD35CB0F9C5F764F070 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CF8D0BD4B75E8C2C174692A5 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				989CCB80ADCA5125F048AA54 /* PromptStudioApp.swift */,
+				3CBD4D12E4E05F9384F4C37C /* StudioModel.swift */,
+				6173A61E7FC3333FD61D13DC /* Brand.swift */,
+				7EFEE443E878286B9201B84F /* Views */,
+				A31D3374946AEC6B0D3886C2 /* Services */,
+				4AF57FD163046E7C1831E244 /* Assets.xcassets */,
+				D0F98F4159EFDA9A0679BAF3 /* Info.plist */,
+				5E7B255EFA7457628D9F3863 /* PromptStudio.entitlements */,
+			);
+			path = "App";
+
+			sourceTree = "<group>";
+		};
+		7EFEE443E878286B9201B84F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F9C20903A141739631923B76 /* BrowserWorkspace.swift */,
+				C549F311B2468D1F0C7BB9AA /* ExpandedOutputView.swift */,
+				149941385970F2B691A72701 /* HomeDashboard.swift */,
+				81A79BF5B1521471C2E77A8C /* NewsSourcesView.swift */,
+				7742964B6DA6A1CBCA7DFCBA /* PromptChatPanel.swift */,
+				DD0107E24B32EDD8D6BABE8A /* PromptOutputPanel.swift */,
+				3430D884BD3EE72B589F1356 /* QuickPromptView.swift */,
+				0F9598DF9E58271A50A88E3F /* StudioRootView.swift */,
+				2F7BC2C7E2A172A59F42FC98 /* StudioSidebar.swift */,
+			);
+			path = "Views";
+
+			sourceTree = "<group>";
+		};
+		A31D3374946AEC6B0D3886C2 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				69475D767E0F9CBF7E8436CE /* AppleModelClient.swift */,
+				23308669148973FE14F8A4F9 /* HistoryStore.swift */,
+				B800EB6EF680B5F7B49370A2 /* LocalOllamaClient.swift */,
+				544B0490A118C9846D874A2B /* MacActions.swift */,
+				9DCEC78A879DDBDE0845C79B /* NewsFeedParser.swift */,
+				743E6CFA4F6AC5A7AA24969A /* NewsSources.swift */,
+				0AFB7B57D39EB53A25A82EFD /* NewsStore.swift */,
+			);
+			path = "Services";
+
+			sourceTree = "<group>";
+		};
+		FC8F5A85394B0D5FF7E93AFA /* PromptStudioCore */ = {
+			isa = PBXGroup;
+			children = (
+				7C93D68229510D5AF9B5081D /* LocalModelDiscovery.swift */,
+				0D4A8C148030289D0537CB48 /* PromptPostProcessor.swift */,
+				0C68304E7549397AA5EEE586 /* PromptRules.swift */,
+				36EE03A4885104C81FEFC159 /* PromptTypes.swift */,
+				F3C20C34B136D2430F5AB905 /* PromptValidator.swift */,
+			);
+			path = "Sources/PromptStudioCore";
+
+			sourceTree = "<group>";
+		};
+		00C45FD35CB0F9C5F764F070 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1049A9000660D9A3E911B791 /* PromptStudio.app */,
+			);
+
+			name = "Products";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		29C7B681C8D62CBAC94D51C0 /* PromptStudio */ = {isa = PBXNativeTarget; buildConfigurationList = D414C6C04239724F5E675A78 /* Build configuration list for PBXNativeTarget "PromptStudio" */; buildPhases = ( 1CDF2F71A52B082132B04DFF /* Sources */, C02F1309AF4906C92F1EAD44 /* Resources */, ); buildRules = (); dependencies = (); name = PromptStudio; productName = PromptStudio; productReference = 1049A9000660D9A3E911B791 /* PromptStudio.app */; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		98F54143AB4E86B28C3AFEE0 /* Project object */ = {isa = PBXProject; attributes = { BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 2730; TargetAttributes = { 29C7B681C8D62CBAC94D51C0 = { CreatedOnToolsVersion = 27.3; }; }; }; buildConfigurationList = 02E4948EF73832F830B12A55 /* Build configuration list for PBXProject "PromptStudio" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = ( en, Base ); mainGroup = DF891E785808226D241F246E; productRefGroup = 00C45FD35CB0F9C5F764F070; projectDirPath = ""; projectRoot = ""; targets = ( 29C7B681C8D62CBAC94D51C0 /* PromptStudio */, ); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C02F1309AF4906C92F1EAD44 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (
+				A3A784EDA1498EFB770F4F69 /* Assets.xcassets in Resources */,
+			); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1CDF2F71A52B082132B04DFF /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
+				57F794C1211BB10FF723EEA9 /* Brand.swift in Sources */,
+				3554979181A458AFC9124890 /* PromptStudioApp.swift in Sources */,
+				8DFFBEA6AD57E97AE0ABA5EA /* AppleModelClient.swift in Sources */,
+				1E166A458AF7414197FE34A2 /* HistoryStore.swift in Sources */,
+				D2BA9776D49F5B75BDAB99DF /* LocalOllamaClient.swift in Sources */,
+				884035C8CB8A472F32917578 /* MacActions.swift in Sources */,
+				215055E55736DA07CB7BCDF6 /* NewsFeedParser.swift in Sources */,
+				38A8EE5AEF0FC9795FF2F901 /* NewsSources.swift in Sources */,
+				5E6BF26056FC54ABD84F033A /* NewsStore.swift in Sources */,
+				F85A7DA91F5FE367B3A5D9F6 /* StudioModel.swift in Sources */,
+				980DBC64018AE77DEADF49EF /* BrowserWorkspace.swift in Sources */,
+				D80733758CAC9A4B21FD29E2 /* ExpandedOutputView.swift in Sources */,
+				F9E9DBC8D5E52EA608E1FE6A /* HomeDashboard.swift in Sources */,
+				C189D45752C47A2EAC9E0402 /* NewsSourcesView.swift in Sources */,
+				10788D19C0A37C8C111C5815 /* PromptChatPanel.swift in Sources */,
+				51855FA7C199AB157F3B25EF /* PromptOutputPanel.swift in Sources */,
+				DBA707B3B78CDA93CA0A6ADE /* QuickPromptView.swift in Sources */,
+				DBB170D28B7CFC7E44BE465F /* StudioRootView.swift in Sources */,
+				DAEB46A968E645E557E9F337 /* StudioSidebar.swift in Sources */,
+				4C0C75D007524CECEC4550D1 /* LocalModelDiscovery.swift in Sources */,
+				74956F7CF0EDB468A79D4222 /* PromptPostProcessor.swift in Sources */,
+				725CA2DAECBF69A462E42A35 /* PromptRules.swift in Sources */,
+				E619E3210EEA8A291F6F6A25 /* PromptTypes.swift in Sources */,
+				5DA14173F1FC470A8DA90199 /* PromptValidator.swift in Sources */,
+			); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		877A6BA951A2EA0025A2ABE8 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = "NO";
+				CLANG_ENABLE_MODULES = "YES";
+				DEBUG_INFORMATION_FORMAT = "dwarf";
+				ENABLE_TESTABILITY = "YES";
+				MACOSX_DEPLOYMENT_TARGET = "27.0";
+				SDKROOT = "macosx";
+				SWIFT_COMPILATION_MODE = "singlefile";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = "complete";
+				SWIFT_VERSION = "6.0";
+			}; name = Debug; };
+		959134B361DD7E21ADEA3164 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = "NO";
+				CLANG_ENABLE_MODULES = "YES";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_TESTABILITY = "NO";
+				MACOSX_DEPLOYMENT_TARGET = "27.0";
+				SDKROOT = "macosx";
+				SWIFT_COMPILATION_MODE = "wholemodule";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = "complete";
+				SWIFT_VERSION = "6.0";
+			}; name = Release; };
+		1E0DDAF384B911BF23BC77ED /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
+				CODE_SIGN_ENTITLEMENTS = "App/PromptStudio.entitlements";
+				CODE_SIGN_STYLE = "Automatic";
+				CURRENT_PROJECT_VERSION = "1";
+				ENABLE_HARDENED_RUNTIME = "YES";
+				GENERATE_INFOPLIST_FILE = "NO";
+				INFOPLIST_FILE = "App/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LS_APPLICATION_CATEGORY_TYPE = "public.app-category.productivity";
+				MACOSX_DEPLOYMENT_TARGET = "27.0";
+				MARKETING_VERSION = "1.0";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.hitfluence.PromptStudio";
+				PRODUCT_NAME = "PromptStudio";
+				SDKROOT = "macosx";
+				SUPPORTED_PLATFORMS = "macosx";
+				SWIFT_EMIT_LOC_STRINGS = "YES";
+				SWIFT_STRICT_CONCURRENCY = "complete";
+				SWIFT_VERSION = "6.0";
+			}; name = Debug; };
+		A1EFC270D4D6011185E1BD4D /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
+				CODE_SIGN_ENTITLEMENTS = "App/PromptStudio.entitlements";
+				CODE_SIGN_STYLE = "Automatic";
+				CURRENT_PROJECT_VERSION = "1";
+				ENABLE_HARDENED_RUNTIME = "YES";
+				GENERATE_INFOPLIST_FILE = "NO";
+				INFOPLIST_FILE = "App/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LS_APPLICATION_CATEGORY_TYPE = "public.app-category.productivity";
+				MACOSX_DEPLOYMENT_TARGET = "27.0";
+				MARKETING_VERSION = "1.0";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.hitfluence.PromptStudio";
+				PRODUCT_NAME = "PromptStudio";
+				SDKROOT = "macosx";
+				SUPPORTED_PLATFORMS = "macosx";
+				SWIFT_EMIT_LOC_STRINGS = "YES";
+				SWIFT_STRICT_CONCURRENCY = "complete";
+				SWIFT_VERSION = "6.0";
+			}; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		02E4948EF73832F830B12A55 /* Build configuration list for PBXProject "PromptStudio" */ = {isa = XCConfigurationList; buildConfigurations = ( 877A6BA951A2EA0025A2ABE8 /* Debug */, 959134B361DD7E21ADEA3164 /* Release */ ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		D414C6C04239724F5E675A78 /* Build configuration list for PBXNativeTarget "PromptStudio" */ = {isa = XCConfigurationList; buildConfigurations = ( 1E0DDAF384B911BF23BC77ED /* Debug */, A1EFC270D4D6011185E1BD4D /* Release */ ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+}
