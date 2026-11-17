@@ -15,13 +15,14 @@ enum AppleModelClient {
     }
 
     @MainActor
-    static func generate(input: String, instructions: String) async throws -> String {
+    /// `prompt` is already wrapped in a data envelope by `GenerationRequest.modelPrompt`.
+    static func generate(prompt: String, instructions: String) async throws -> String {
         guard case .available = SystemLanguageModel.default.availability else {
             throw AppleModelError.unavailable(modelStatus())
         }
         let session = LanguageModelSession(instructions: instructions)
         do {
-            let response = try await session.respond(to: PromptRules.userEnvelope(input))
+            let response = try await session.respond(to: prompt)
             try Task.checkCancellation()
             return response.content
         } catch let error as LanguageModelError {

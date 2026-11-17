@@ -61,3 +61,33 @@ All headlines and metadata originate from publisher feed payloads. With feeds of
 - Verify that a story opens WebKit, address navigation works, HTTPS policy rejects non-web schemes, and Pop Out uses an independent reader.
 - Verify with Reduce Motion and VoiceOver, check keyboard shortcuts and appropriate focus labels.
 - Compare the new icon and mascot surface with the owner's approved HitFluence artwork before treating it as production brand parity.
+
+## Implemented workspace (2026-11-17, `feature/aurora-chat-workspace`)
+
+**Layout:** `[sidebar] [browser] [chat] [Markdown artifact]` inside a native `NavigationSplitView`.
+
+- The **globe** (top-right toolbar, ⇧⌘B) toggles the WebKit pane to the left of the chat. It never navigates away from the conversation, and the draft and artifact stay put.
+- **Panels:** side panes resize by dragging the dividers (native column-resize pointer; VoiceOver-adjustable). Each pane has close, Expand (focus mode, ⌥⌘1/2/3, ⌥⌘0 to restore) and Pop Out.
+- **Narrow windows adapt in order** (`WorkspaceLayout.resolve`, unit tested):
+  1. The sidebar auto-collapses. If you reopen it yourself, it stays open.
+  2. The side panes shrink to their minimums (browser 360, artifact 340, chat 380).
+  3. The secondary pane becomes a 44 pt rail that one click restores.
+- **Persistence:** panel visibility and widths are saved per window (`@SceneStorage`).
+
+**Conversation:**
+- **Timeline:** user and assistant turns at a readable width.
+- **Engine status:** a real "Optimizing with … · Ns" row only while an engine call is in flight.
+- **Composer** at the bottom: model, profile and detail menus, a live availability indicator, Paste, ⌘↩ send, ⌘. stop.
+- **Turns:** the first message creates Version 1. Each follow-up creates a *proposed* version against the current one, which you can Compare, Apply or Discard.
+- **Errors:** they appear in the timeline, and your message returns to the composer. There is never a cloud fallback.
+
+**Artifact:**
+- **Display:** Preview (block-level Markdown renderer with Foundation inline styling), Source (editable for the current version), and Compare (line diff against the base version).
+- **History:** a version menu with Restore, plus Copy (⇧⌘C), Export (⇧⌘E), Expand and Pop Out.
+- **Preservation warnings:** shown per version.
+
+**Home:**
+- **Cards:** publisher thumbnails come only from Media RSS or image enclosures (HTTPS raster images, 1.5 MB cap, 7-day / 40 MB cache, Clear Thumbnail Cache in Sources and Settings). Each card shows publisher, date, host and excerpt.
+- **Opening stories:** clicking the headline or image opens the article's canonical URL in the browser pane.
+- **Saved filter:** works offline.
+- **Newsletter shortcuts:** remain publisher links that are never scraped.

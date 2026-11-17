@@ -1,69 +1,80 @@
 from pathlib import Path
 import hashlib
 import json
-from PIL import Image, ImageDraw, ImageFilter
 import math
+import sys
 
 root=Path(__file__).resolve().parent.parent
-assets=root/'App'/'Assets.xcassets'/'AppIcon.appiconset'
-assets.mkdir(parents=True,exist_ok=True)
-W=1024
-# Original 1024px vector-style rendering of HitFluence's metallic bracketed hashtag.
-# Replace with the owner's approved production mascot asset when it is available.
-base=Image.new('RGBA',(W,W),(0,0,0,0))
-d=ImageDraw.Draw(base)
-d.rounded_rectangle((12,12,W-12,W-12),radius=235,fill=(17,23,44,255))
-for radius,rgba in [(430,(47,107,255,16)),(310,(156,123,255,20)),(195,(242,179,61,19))]:
-    layer=Image.new('RGBA',(W,W),(0,0,0,0)); ld=ImageDraw.Draw(layer)
-    ld.ellipse((570-radius,340-radius,570+radius,340+radius),fill=rgba)
-    base=Image.alpha_composite(base,layer)
-# Warm rim lighting, cut into the deep graphite tile.
-d=ImageDraw.Draw(base)
-d.rounded_rectangle((20,20,1004,1004),radius=221,outline=(109,125,194,125),width=4)
-# Oversized, beveled metallic gold mark with cool periwinkle glancing lights.
-mask=Image.new('L',(W,W),0)
-md=ImageDraw.Draw(mask)
-# Two angled uprights and two horizontal strokes.
-for line in [(428,300,346,715),(646,300,565,715),(300,430,730,430),(268,604,698,604)]:
-    md.line(line,fill=255,width=72)
-    for x,y in [(line[0],line[1]),(line[2],line[3])]:
-        md.ellipse((x-36,y-36,x+36,y+36),fill=255)
-# The blue/lavender bloom is intentional and restrained.
-glow=Image.new('RGBA',(W,W),(0,0,0,0))
-glow_layer=Image.new('RGBA',(W,W),(99,88,255,0));glow_layer.putalpha(mask)
-glow=Image.alpha_composite(glow,glow_layer.filter(ImageFilter.GaussianBlur(36)))
-base=Image.alpha_composite(base,Image.blend(Image.new('RGBA',(W,W),(0,0,0,0)),glow,0.45))
-metal=Image.new('RGBA',(W,W),(0,0,0,0));pixels=metal.load()
-for y in range(W):
-    for x in range(W):
-        t=min(1,max(0,(0.75*x/W+0.9*y/W)))
-        high=(255,224,145); low=(222,130,52)
-        pixels[x,y]=(int(high[0]*(1-t)+low[0]*t),int(high[1]*(1-t)+low[1]*t),int(high[2]*(1-t)+low[2]*t),255)
-metal.putalpha(mask)
-base=Image.alpha_composite(base,metal)
-d=ImageDraw.Draw(base)
-# Thin bracket-shaped strokes echo the approved HitCode [#] identity.
-for pts in [[(253,278),(196,278),(196,738),(253,738)],[(753,278),(810,278),(810,738),(753,738)]]:
-    d.line(pts,fill=(143,168,255,237),width=26,joint='curve')
-    for x,y in [pts[0],pts[-1]]: d.ellipse((x-13,y-13,x+13,y+13),fill=(143,168,255,237))
-# Mint and coral constellation accents, used throughout HitFluence branding.
-d.ellipse((782,230,814,262),fill=(63,224,181,255))
-d.ellipse((199,796,224,821),fill=(255,122,89,255))
-base.save(assets/'AppIcon1024.png')
-# Use both macOS 1x and 2x slots, derived from high-res source
-names={16:'icon_16.png',32:'icon_32.png',64:'icon_64.png',128:'icon_128.png',256:'icon_256.png',512:'icon_512.png',1024:'AppIcon1024.png'}
-for side,name in names.items():
-    if side!=1024: base.resize((side,side),Image.Resampling.LANCZOS).save(assets/name)
-entries=[]
-for logical in [16,32,128,256,512]:
-    for scale in [1,2]:
-        size=logical*scale
-        entries.append({'size':f'{logical}x{logical}','idiom':'mac','filename':names[size],'scale':f'{scale}x'})
-(assets/'Contents.json').write_text(json.dumps({'images':entries,'info':{'author':'xcode','version':1}},indent=2)+'\n')
-(root/'App'/'Assets.xcassets'/'Contents.json').write_text(json.dumps({'info':{'author':'xcode','version':1}})+'\n')
+
+# Icon rendering is opt-in (`python3 Documentation/create_project.py --icons`) so regenerating the
+# project never overwrites approved artwork and Pillow is only needed when re-rendering icons.
+def render_icons():
+    from PIL import Image, ImageDraw, ImageFilter
+    assets=root/'App'/'Assets.xcassets'/'AppIcon.appiconset'
+    assets.mkdir(parents=True,exist_ok=True)
+    W=1024
+    # Original 1024px vector-style rendering of HitFluence's metallic bracketed hashtag.
+    # Replace with the owner's approved production mascot asset when it is available.
+    base=Image.new('RGBA',(W,W),(0,0,0,0))
+    d=ImageDraw.Draw(base)
+    d.rounded_rectangle((12,12,W-12,W-12),radius=235,fill=(17,23,44,255))
+    for radius,rgba in [(430,(47,107,255,16)),(310,(156,123,255,20)),(195,(242,179,61,19))]:
+        layer=Image.new('RGBA',(W,W),(0,0,0,0)); ld=ImageDraw.Draw(layer)
+        ld.ellipse((570-radius,340-radius,570+radius,340+radius),fill=rgba)
+        base=Image.alpha_composite(base,layer)
+    # Warm rim lighting, cut into the deep graphite tile.
+    d=ImageDraw.Draw(base)
+    d.rounded_rectangle((20,20,1004,1004),radius=221,outline=(109,125,194,125),width=4)
+    # Oversized, beveled metallic gold mark with cool periwinkle glancing lights.
+    mask=Image.new('L',(W,W),0)
+    md=ImageDraw.Draw(mask)
+    # Two angled uprights and two horizontal strokes.
+    for line in [(428,300,346,715),(646,300,565,715),(300,430,730,430),(268,604,698,604)]:
+        md.line(line,fill=255,width=72)
+        for x,y in [(line[0],line[1]),(line[2],line[3])]:
+            md.ellipse((x-36,y-36,x+36,y+36),fill=255)
+    # The blue/lavender bloom is intentional and restrained.
+    glow=Image.new('RGBA',(W,W),(0,0,0,0))
+    glow_layer=Image.new('RGBA',(W,W),(99,88,255,0));glow_layer.putalpha(mask)
+    glow=Image.alpha_composite(glow,glow_layer.filter(ImageFilter.GaussianBlur(36)))
+    base=Image.alpha_composite(base,Image.blend(Image.new('RGBA',(W,W),(0,0,0,0)),glow,0.45))
+    metal=Image.new('RGBA',(W,W),(0,0,0,0));pixels=metal.load()
+    for y in range(W):
+        for x in range(W):
+            t=min(1,max(0,(0.75*x/W+0.9*y/W)))
+            high=(255,224,145); low=(222,130,52)
+            pixels[x,y]=(int(high[0]*(1-t)+low[0]*t),int(high[1]*(1-t)+low[1]*t),int(high[2]*(1-t)+low[2]*t),255)
+    metal.putalpha(mask)
+    base=Image.alpha_composite(base,metal)
+    d=ImageDraw.Draw(base)
+    # Thin bracket-shaped strokes echo the approved HitCode [#] identity.
+    for pts in [[(253,278),(196,278),(196,738),(253,738)],[(753,278),(810,278),(810,738),(753,738)]]:
+        d.line(pts,fill=(143,168,255,237),width=26,joint='curve')
+        for x,y in [pts[0],pts[-1]]: d.ellipse((x-13,y-13,x+13,y+13),fill=(143,168,255,237))
+    # Mint and coral constellation accents, used throughout HitFluence branding.
+    d.ellipse((782,230,814,262),fill=(63,224,181,255))
+    d.ellipse((199,796,224,821),fill=(255,122,89,255))
+    base.save(assets/'AppIcon1024.png')
+    # Use both macOS 1x and 2x slots, derived from high-res source
+    names={16:'icon_16.png',32:'icon_32.png',64:'icon_64.png',128:'icon_128.png',256:'icon_256.png',512:'icon_512.png',1024:'AppIcon1024.png'}
+    for side,name in names.items():
+        if side!=1024: base.resize((side,side),Image.Resampling.LANCZOS).save(assets/name)
+    entries=[]
+    for logical in [16,32,128,256,512]:
+        for scale in [1,2]:
+            size=logical*scale
+            entries.append({'size':f'{logical}x{logical}','idiom':'mac','filename':names[size],'scale':f'{scale}x'})
+    (assets/'Contents.json').write_text(json.dumps({'images':entries,'info':{'author':'xcode','version':1}},indent=2)+'\n')
+    (root/'App'/'Assets.xcassets'/'Contents.json').write_text(json.dumps({'info':{'author':'xcode','version':1}})+'\n')
+    return len(entries)
+
+icon_count = render_icons() if '--icons' in sys.argv else None
 
 app_paths=[p.relative_to(root) for p in sorted((root/'App').rglob('*.swift'))]
 core_paths=[p.relative_to(root) for p in sorted((root/'Sources/PromptStudioCore').glob('*.swift'))]
+unsupported=[p for p in app_paths if p.parent.as_posix() not in ('App','App/Views','App/Services')]
+if unsupported:
+    sys.exit('Swift files outside App/, App/Views or App/Services need a project group: '+', '.join(map(str,unsupported)))
 sources=app_paths+core_paths
 
 # Deterministic 24-character project object IDs.
@@ -137,6 +148,7 @@ for mode in ['Debug','Release']:
         'MACOSX_DEPLOYMENT_TARGET':'27.0','SWIFT_VERSION':'6.0',
         'SWIFT_STRICT_CONCURRENCY':'complete','SWIFT_COMPILATION_MODE':'singlefile' if debug else 'wholemodule',
         'SWIFT_OPTIMIZATION_LEVEL':'-Onone' if debug else '-O',
+        'SWIFT_ACTIVE_COMPILATION_CONDITIONS':'DEBUG' if debug else '',
         'DEBUG_INFORMATION_FORMAT':'dwarf' if debug else 'dwarf-with-dsym',
         'ENABLE_TESTABILITY':'YES' if debug else 'NO',
     }
@@ -238,4 +250,4 @@ scheme=f'''<?xml version="1.0" encoding="UTF-8"?>
 print('App Swift source files:',len(app_paths))
 print('Core Swift source files:',len(core_paths))
 print('PBX size:',len(pbx))
-print('Icon assets:',len(entries))
+print('Icon assets:', icon_count if icon_count is not None else 'unchanged (pass --icons to re-render)')

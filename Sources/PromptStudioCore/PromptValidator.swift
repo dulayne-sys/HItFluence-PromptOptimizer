@@ -1,6 +1,6 @@
 import Foundation
 
-public struct PromptValidation: Sendable, Equatable {
+public struct PromptValidation: Codable, Sendable, Equatable {
     public var missingExactStrings: [String]
     public var warnings: [String]
     public var hasWarnings: Bool { !warnings.isEmpty }

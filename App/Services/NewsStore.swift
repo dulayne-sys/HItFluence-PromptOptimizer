@@ -12,12 +12,20 @@ import Observation
     var enabledSourceIDs: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "PromptStudio.NewsSources") ??
                                           FeedSource.builtIn.prefix(8).map(\.id))
     var savedIDs: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "PromptStudio.NewsSaved") ?? [])
+    /// Publisher-provided thumbnails. Downloads still require `isEnabled` (the news network opt-in).
+    var showImages = UserDefaults.standard.object(forKey: "PromptStudio.NewsImages") as? Bool ?? true
     @ObservationIgnored private var activeTask: Task<Void, Never>?
     @ObservationIgnored private var loadedCache = false
 
     var filtered: [NewsItem] {
-        selectedTopic == .all ? articles : articles.filter { $0.topics.contains(selectedTopic) }
+        switch selectedTopic {
+        case .all: articles
+        case .saved: saved
+        default: articles.filter { $0.topics.contains(selectedTopic) }
+        }
     }
+    /// True when cards may fetch thumbnails over the network; cached images still show offline.
+    var allowsImageDownloads: Bool { isEnabled && showImages }
     var saved: [NewsItem] { articles.filter { savedIDs.contains($0.id) } }
     var freshness: String {
         guard let lastUpdated else { return isEnabled ? "Not updated yet" : "Offline · News off" }
@@ -43,6 +51,11 @@ import Observation
         isEnabled = isOn
         UserDefaults.standard.set(isOn, forKey: "PromptStudio.NewsEnabled")
         if isOn { refresh() } else { cancel() }
+    }
+
+    func setShowImages(_ value: Bool) {
+        showImages = value
+        UserDefaults.standard.set(value, forKey: "PromptStudio.NewsImages")
     }
 
     func toggleSource(_ id: String) {

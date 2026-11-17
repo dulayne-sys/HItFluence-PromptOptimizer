@@ -20,6 +20,16 @@ struct NewsSourcesView: View {
                 .padding(.vertical, 14)
                 .padding(.horizontal, 18)
                 .background(HFBrand.panel, in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle("Load publisher images (Media RSS and image enclosures only)", isOn: Binding(
+                        get: { news.showImages }, set: { news.setShowImages($0) }
+                    ))
+                    .tint(HFBrand.blue)
+                    ThumbnailCacheControls()
+                }
+                .padding(.vertical, 14)
+                .padding(.horizontal, 18)
+                .background(HFBrand.panel, in: RoundedRectangle(cornerRadius: 12))
                 HFEyebrow(title: "VERIFIED SOURCE LIST FROM YOUR HITCODE PROJECT")
                 ForEach(FeedSource.builtIn) { source in
                     HStack(spacing: 12) {

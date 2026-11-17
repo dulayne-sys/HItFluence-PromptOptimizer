@@ -29,7 +29,7 @@ actor LocalOllamaClient {
         }
     }
 
-    func generate(model: String, input: String, instructions: String) async throws -> String {
+    func generate(model: String, prompt: String, instructions: String) async throws -> String {
         guard !model.isEmpty else { throw LocalModelError.modelNotInstalled }
         let url = try endpoint("/api/chat")
         var request = URLRequest(url: url)
@@ -40,7 +40,7 @@ actor LocalOllamaClient {
             model: model,
             messages: [
                 ChatMessage(role: "system", content: instructions),
-                ChatMessage(role: "user", content: PromptRules.userEnvelope(input))
+                ChatMessage(role: "user", content: prompt)
             ],
             stream: false,
             options: .init(temperature: 0.2)
