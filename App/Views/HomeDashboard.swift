@@ -261,7 +261,8 @@ private struct HomeReadingList: View {
         VStack(alignment: .leading, spacing: 12) {
             HFEyebrow(title: "YOUR NEWSLETTER SHORTCUTS")
             HStack(spacing: 14) {
-                ForEach(FeedSource.readingList, id: \.name) { publisher in
+                ForEach(FeedSource.readingList.indices, id: \.self) { index in
+                    let publisher = FeedSource.readingList[index]
                     Button { model.openBrowser(publisher.url) } label: {
                         HStack(spacing: 14) {
                             Image(systemName: "envelope.open")
