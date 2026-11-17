@@ -133,7 +133,7 @@ final class StudioModel {
                         alertMessage = "The output is ready, but history could not be saved: \(error.localizedDescription)"
                     }
                 }
-            } catch is CancellationError {
+            } catch let error where GenerationCancellation.isCancellation(error) {
                 status = "Generation canceled"
             } catch {
                 status = "Could not optimize"

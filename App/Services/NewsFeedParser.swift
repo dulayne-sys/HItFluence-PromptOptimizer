@@ -1,5 +1,7 @@
 import Foundation
-import FoundationXML
+#if canImport(FoundationXML)
+import FoundationXML // Linux only; on Apple platforms XMLParser lives in Foundation.
+#endif
 
 /// RSS and Atom metadata extraction only. Does not scrape article pages or load remote media.
 final class NewsFeedParser: NSObject, XMLParserDelegate {
@@ -97,7 +99,9 @@ final class NewsFeedParser: NSObject, XMLParserDelegate {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        for pattern in ["EEE, dd MMM yyyy HH:mm:ss Z", "EEE, d MMM yyyy HH:mm:ss Z", "yyyy-MM-dd'T'HH:mm:ssZ"] {
+        // RFC 822 allows numeric offsets ("+0000") or zone abbreviations ("PDT", used by Apple Developer News).
+        for pattern in ["EEE, dd MMM yyyy HH:mm:ss Z", "EEE, d MMM yyyy HH:mm:ss Z",
+                        "EEE, dd MMM yyyy HH:mm:ss zzz", "EEE, d MMM yyyy HH:mm:ss zzz", "yyyy-MM-dd'T'HH:mm:ssZ"] {
             formatter.dateFormat = pattern
             if let date = formatter.date(from: raw) { return date }
         }

@@ -78,12 +78,11 @@ import WebKit
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         stateChanged?(webView)
     }
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
-                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        guard let scheme = navigationAction.request.url?.scheme?.lowercased() else {
-            decisionHandler(.cancel); return
-        }
-        decisionHandler(scheme == "https" || scheme == "about" ? .allow : .cancel)
+    // Must match the SDK exactly (async form of decidePolicyForNavigationAction); a near-miss
+    // signature is silently never called, which would leave the HTTPS-only policy unenforced.
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+        guard let scheme = navigationAction.request.url?.scheme?.lowercased() else { return .cancel }
+        return scheme == "https" || scheme == "about" ? .allow : .cancel
     }
 }
 

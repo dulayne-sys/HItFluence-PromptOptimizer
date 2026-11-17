@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 public enum PromptProfile: String, Codable, CaseIterable, Identifiable, Sendable {
     case developer, general, research, creative
@@ -58,5 +61,15 @@ public struct PromptRecord: Codable, Identifiable, Sendable, Equatable {
         self.profile = profile
         self.detail = detail
         self.engineLabel = engineLabel
+    }
+}
+
+public enum GenerationCancellation {
+    /// A user cancel surfaces as `CancellationError` from Swift tasks but as
+    /// `URLError(.cancelled)` from URLSession; both mean "canceled", not "failed".
+    public static func isCancellation(_ error: any Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        return false
     }
 }

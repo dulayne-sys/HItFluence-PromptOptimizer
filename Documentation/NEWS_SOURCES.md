@@ -14,8 +14,8 @@ The initial publisher inventory follows the user's private HitCode repository `S
 | Hugging Face | https://huggingface.co/blog/feed.xml | Enabled |
 | GitHub Blog | https://github.blog/feed/ | Enabled |
 | GitHub Security | https://github.blog/security/feed/ | Enabled |
-| OpenAI | https://openai.com/news/rss.xml | Disabled pending validation |
-| GitHub Changelog | https://github.blog/changelog/feed/ | Disabled pending validation |
+| OpenAI | https://openai.com/news/rss.xml | Disabled by default (feed validated 2026-11-17) |
+| GitHub Changelog | https://github.blog/changelog/feed/ | Disabled by default (feed validated 2026-11-17) |
 
 **Publisher-only shortcuts, without any automatic feed scraping:** https://www.superhuman.ai/ and https://codenewsletter.ai/.
 

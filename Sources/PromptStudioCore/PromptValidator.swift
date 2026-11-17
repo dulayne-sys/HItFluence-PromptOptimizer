@@ -31,7 +31,9 @@ public enum PromptValidator {
     public static func collectProtectedStrings(_ input: String) -> [String] {
         let patterns = [
             #"https?://[^\s<>\)\]]+"#,
-            #"(?<!\w)(?:/[A-Za-z0-9._+ -]+){2,}/?"#,
+            // Absolute paths: folders may contain spaces ("/Volumes/Test Drive/…"), the last component may not,
+            // so trailing prose is not swallowed; never start inside a URL or after another path character.
+            #"(?<![\w:/.])(?:/[A-Za-z0-9._+-]+(?: [A-Za-z0-9._+-]+)*(?=/))+/[A-Za-z0-9._+-]+/?"#,
             #"\b\d{4}-\d{2}-\d{2}\b"#,
             #"\b[A-Za-z0-9_.-]+\.(?:swift|xcodeproj|xcworkspace|md|json|plist|xcassets)\b"#,
             #"`[^`\n]+`"#

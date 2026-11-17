@@ -56,6 +56,8 @@ actor LocalOllamaClient {
             return content
         } catch let error as LocalModelError {
             throw error
+        } catch let error where GenerationCancellation.isCancellation(error) {
+            throw CancellationError()
         } catch {
             throw LocalModelError.connection(error.localizedDescription)
         }
