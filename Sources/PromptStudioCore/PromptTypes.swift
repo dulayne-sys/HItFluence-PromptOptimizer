@@ -30,19 +30,6 @@ public enum PromptDetail: String, Codable, CaseIterable, Identifiable, Sendable 
     public var title: String { self == .concise ? "Focused" : "Detailed" }
 }
 
-public enum PromptEngineKind: String, Codable, CaseIterable, Identifiable, Sendable {
-    case apple, qwen, glimmer
-    public var id: String { rawValue }
-    public var title: String {
-        switch self {
-        case .apple: "Apple Intelligence"
-        case .qwen: "Qwen Instruct · Local"
-        case .glimmer: "Muse Glimmer · Local"
-        }
-    }
-    public var isLocalOllama: Bool { self != .apple }
-}
-
 public struct PromptRecord: Codable, Identifiable, Sendable, Equatable {
     public let id: UUID
     public let createdAt: Date

@@ -28,6 +28,23 @@ struct BrowserRequest: Equatable {
     let url: URL
 }
 
+/// Apple Intelligence, or one specific local model (by catalog ID) run inside the app.
+enum EngineChoice: Hashable {
+    case apple
+    case local(String)
+
+    init(storageValue: String?) {
+        if let value = storageValue, value.hasPrefix("local:") { self = .local(String(value.dropFirst(6))) } else { self = .apple }
+    }
+
+    var storageValue: String {
+        switch self {
+        case .apple: "apple"
+        case .local(let id): "local:\(id)"
+        }
+    }
+}
+
 /// Real availability of the selected engine, for the composer's status pill.
 struct EngineAvailability: Equatable {
     let isReady: Bool
@@ -51,12 +68,18 @@ final class StudioModel {
     var viewedVersionID: UUID?
     var artifactMode: ArtifactDisplayMode = .preview
 
-    // Engines
-    var engine: PromptEngineKind = .apple
-    var availableLocalTags: [String] = []
-    var chosenQwenTag = ""
-    var chosenGlimmerTag = ""
-    var localServerReachable = false
+    // Engines: Apple Intelligence or a local model running in-process (Core AI or MLX). No external server.
+    var engine = EngineChoice(storageValue: UserDefaults.standard.string(forKey: "PromptStudio.Engine")) {
+        didSet {
+            UserDefaults.standard.set(engine.storageValue, forKey: "PromptStudio.Engine")
+            if engine == .apple { Task { await LocalModelRuntime.shared.unload() } }
+        }
+    }
+    var localModels: [LocalModel] = []
+    var modelsFolder: URL?
+    var isScanningModels = false
+    /// The runtime's real current phase ("Loading…", "Generating…") while a local model works.
+    var generationPhase: String?
     var includeOriginal = false
 
     // Persistence and status
@@ -123,25 +146,40 @@ final class StudioModel {
 
     // MARK: Engines
 
-    var matchingTags: [String] { LocalModelDiscovery.suitableTags(for: engine, among: availableLocalTags) }
-
-    var selectedLocalTag: String? {
-        let selected = engine == .qwen ? chosenQwenTag : chosenGlimmerTag
-        let matches = matchingTags
-        return matches.contains(selected) ? selected : matches.first
+    var selectedLocalModel: LocalModel? {
+        guard case .local(let id) = engine else { return nil }
+        return localModels.first { $0.id == id }
     }
+
+    var engineTitle: String {
+        switch engine {
+        case .apple: "Apple Intelligence"
+        case .local: selectedLocalModel?.name ?? "Local model"
+        }
+    }
+
+    var engineSymbol: String {
+        switch engine {
+        case .apple: "apple.logo"
+        case .local: selectedLocalModel?.family == .museGlimmer ? "sparkles" : "cpu"
+        }
+    }
+
+    var hasMuseGlimmer: Bool { localModels.contains { $0.family == .museGlimmer } }
 
     var engineAvailability: EngineAvailability {
         switch engine {
         case .apple:
             let status = AppleModelClient.modelStatus()
             return EngineAvailability(isReady: status == "Ready on device", summary: status)
-        case .qwen, .glimmer:
-            guard localServerReachable else { return EngineAvailability(isReady: false, summary: "Ollama is not running") }
-            guard let tag = selectedLocalTag else {
-                return EngineAvailability(isReady: false, summary: "No \(engine == .qwen ? "Qwen" : "Glimmer") model installed")
+        case .local:
+            guard let model = selectedLocalModel else {
+                return EngineAvailability(isReady: false, summary: isScanningModels ? "Looking for local models…"
+                                                                                     : "Model not found. Rescan or choose its folder")
             }
-            return EngineAvailability(isReady: true, summary: "\(tag) · local")
+            return model.isUsable
+                ? EngineAvailability(isReady: true, summary: "\(model.backend.label) · on this Mac")
+                : EngineAvailability(isReady: false, summary: model.status.explanation)
         }
     }
 
@@ -157,16 +195,40 @@ final class StudioModel {
             if !saved.isEmpty { sessions = [session] + saved.filter { $0.id != currentSessionID } }
         }
         await refreshLocalModels()
+        #if DEBUG
+        await runSelfTestIfRequested()
+        #endif
     }
 
+    /// Finds models bundled in the app plus those in the user's chosen folder. Inspects files only.
     func refreshLocalModels() async {
-        do {
-            availableLocalTags = try await LocalOllamaClient.shared.installedModelNames()
-            localServerReachable = true
-        } catch {
-            availableLocalTags = []
-            localServerReachable = false
-        }
+        isScanningModels = true
+        let folder = ModelFolderAccess.restore()
+        modelsFolder = folder
+        let bundledURL = ModelFolderAccess.bundledModelsURL
+        let memory = ProcessInfo.processInfo.physicalMemory
+        let found = await Task.detached(priority: .utility) {
+            let bundled = bundledURL.map { LocalModelCatalog.scan($0, physicalMemory: memory, isBundled: true) } ?? []
+            let inFolder = folder.map { LocalModelCatalog.scan($0, physicalMemory: memory) } ?? []
+            return LocalModelCatalog.merge(bundled: bundled, folder: inFolder)
+        }.value
+        localModels = found
+        isScanningModels = false
+    }
+
+    func chooseModelsFolder() {
+        guard ModelFolderAccess.choose() != nil else { return }
+        Task { await refreshLocalModels() }
+    }
+
+    func forgetModelsFolder() {
+        ModelFolderAccess.forget()
+        Task { await refreshLocalModels() }
+    }
+
+    func unloadLocalModel() {
+        Task { await LocalModelRuntime.shared.unload() }
+        status = "Local model unloaded from memory"
     }
 
     // MARK: Conversation turns
@@ -185,8 +247,8 @@ final class StudioModel {
 
     private func run(_ request: GenerationRequest) {
         let chosenEngine = engine
-        let selectedTag = selectedLocalTag
-        let label = chosenEngine == .apple ? chosenEngine.title : (selectedTag ?? chosenEngine.title)
+        let localModel = selectedLocalModel
+        let label = engineTitle
         let appendOriginal = includeOriginal && !request.isRefinement
         activeRequest = request
         generationStartedAt = .now
@@ -197,6 +259,7 @@ final class StudioModel {
             defer {
                 activeRequest = nil
                 generationStartedAt = nil
+                generationPhase = nil
                 generationTask = nil
             }
             do {
@@ -204,19 +267,19 @@ final class StudioModel {
                 switch chosenEngine {
                 case .apple:
                     raw = try await AppleModelClient.generate(prompt: request.modelPrompt, instructions: request.instructions)
-                case .qwen, .glimmer:
-                    var tag = selectedTag
-                    if tag == nil {
-                        await refreshLocalModels() // Ollama may have started since launch: check for real.
-                        tag = selectedLocalTag
+                case .local:
+                    guard let localModel else {
+                        throw LocalModelError.notUsable("The selected local model wasn't found. Rescan or choose your models folder in Settings.")
                     }
-                    guard let tag else {
-                        throw localServerReachable
-                            ? LocalModelError.modelNotInstalled
-                            : LocalModelError.connection("nothing is listening at 127.0.0.1:11434. Start Ollama and try again.")
-                    }
-                    raw = try await LocalOllamaClient.shared.generate(model: tag, prompt: request.modelPrompt,
-                                                                      instructions: request.instructions)
+                    raw = try await LocalModelRuntime.shared.generate(
+                        localModel, prompt: request.modelPrompt, instructions: request.instructions,
+                        onPhase: { phase in
+                            Task { @MainActor in
+                                guard self.activeRequest?.id == request.id else { return }
+                                self.generationPhase = phase
+                                self.status = phase
+                            }
+                        })
                 }
                 try Task.checkCancellation()
                 let markdown = PromptPostProcessor.render(raw, source: request.originalRequest, includeOriginal: appendOriginal)
@@ -399,6 +462,36 @@ final class StudioModel {
 
 #if DEBUG
 extension StudioModel {
+    /// QA hook (Debug builds only): `PromptStudio.app/Contents/MacOS/PromptStudio -PromptStudioSelfTest`
+    /// generates once with the bundled local model inside the App Sandbox, prints the result and quits.
+    func runSelfTestIfRequested() async {
+        guard ProcessInfo.processInfo.arguments.contains("-PromptStudioSelfTest") else { return }
+        func log(_ line: String) { FileHandle.standardOutput.write(Data((line + "\n").utf8)) }
+        let sandboxed = ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
+        log("selftest: sandboxed=\(sandboxed) models=\(localModels.map { "\($0.id) [\($0.summary); \($0.status.explanation)]" })")
+        guard let bundled = localModels.first(where: { $0.isBundled && $0.isUsable }) else {
+            log("selftest: FAIL no usable bundled model")
+            exit(1)
+        }
+        let source = "Write a Codex task to fix the failing build in /Users/me/Code/Studio/Editor.swift before 2026-12-01. Do not change `Package.swift`."
+        let start = Date()
+        do {
+            let raw = try await LocalModelRuntime.shared.generate(
+                bundled, prompt: PromptRules.userEnvelope(source),
+                instructions: PromptRules.instructions(profile: .developer, detail: .concise),
+                onPhase: { phase in FileHandle.standardOutput.write(Data("selftest phase: \(phase)\n".utf8)) })
+            let markdown = PromptPostProcessor.render(raw, source: source, includeOriginal: false)
+            let report = PromptValidator.inspect(source: source, generated: markdown)
+            log(String(format: "selftest: OK %.1fs, %d chars, missing=%@", Date().timeIntervalSince(start),
+                       markdown.count, report.missingExactStrings.description))
+            log(markdown)
+            exit(0)
+        } catch {
+            log("selftest: FAIL \(error.localizedDescription)")
+            exit(1)
+        }
+    }
+
     /// Sample state for SwiftUI previews only (never shipped): one session built through the real
     /// submit/complete path, with an applied version and a pending follow-up proposal.
     static func previewSample() -> StudioModel {

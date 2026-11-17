@@ -17,8 +17,8 @@ flowchart TD
    PROMPT --> RULES[Profile-specific optimizer rules]
    RULES --> ROUTER{Explicit inference choice}
    ROUTER --> AFM[Apple on-device Foundation Models]
-   ROUTER --> QWEN[Qwen via 127.0.0.1 Ollama]
-   ROUTER --> GLIMMER[Muse Glimmer via 127.0.0.1 Ollama]
+   ROUTER --> QWEN[Qwen in-process: Core AI LanguageModelSession or MLX ChatSession]
+   ROUTER --> GLIMMER[Muse Glimmer in-process: MLX VLM, when installed]
    AFM --> VALIDATION[Markdown normalization and preservation warnings]
    QWEN --> VALIDATION
    GLIMMER --> VALIDATION
@@ -29,7 +29,7 @@ flowchart TD
 
 ## Runtime independence
 
-The mini-app neither requires nor embeds HitTree or HitCode. Their repositories were inspected for design and developer-documentation guidance only. Models and their weights remain installed and managed outside this project. App displays actual local Ollama tags discovered at runtime.
+The mini-app neither requires nor embeds HitTree or HitCode. Their repositories were inspected for design and developer-documentation guidance only. Model weights are never committed to this repository. The bundled Qwen3 1.7B is copied into the app at build time, and other models are read in place from the folder you choose. The app lists only models it actually finds on disk, with a status for each.
 
 ## Security / privacy
 

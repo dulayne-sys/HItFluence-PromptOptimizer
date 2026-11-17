@@ -7,8 +7,8 @@ This is a release gate, not a claim that a build has passed.
 3. Compile the PromptStudio scheme in Xcode. Resolve any beta SDK / Swift concurrency errors without changing the prompt-fidelity contract.
 4. Select development signing and verify the built binary contains App Sandbox, network client and user-selected file access entitlements.
 5. With Apple Intelligence enabled, submit a small prompt. Confirm response, output editing, copy and export.
-6. With Ollama running, select Qwen and the specific installed tag. Confirm it completes with no Internet access. Verify Glimmer only if its local tag is installed.
-7. With Ollama stopped, select Qwen or Glimmer. Confirm an explicit failure and no fallback.
+6. Select the bundled Qwen3 1.7B, then choose your models folder and select Qwen2.5 14B. Confirm it completes with no Internet access. Verify Glimmer only if its local tag is installed.
+7. Select a model marked too large or not installed (Glimmer). Confirm an explicit reason and no fallback.
 8. Cancel a long generation and confirm state recovers.
 9. Test prompts with paths, dates, URLs, inline code and potentially conflicting requirements. Confirm warning display.
 10. Disable history, relaunch and verify no history file is persisted. Enable history, generate, relaunch, and confirm records restore. Clear history, then verify deletion.

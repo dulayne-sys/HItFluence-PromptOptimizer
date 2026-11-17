@@ -1,22 +1,5 @@
 import SwiftUI
 
-extension PromptEngineKind {
-    var symbol: String {
-        switch self {
-        case .apple: "apple.logo"
-        case .qwen: "cpu"
-        case .glimmer: "brain.head.profile"
-        }
-    }
-    var shortTitle: String {
-        switch self {
-        case .apple: "Apple Intelligence"
-        case .qwen: "Qwen · Local"
-        case .glimmer: "Glimmer · Local"
-        }
-    }
-}
-
 /// The conversational workspace: a threaded timeline for discussing and refining the prompt, with the
 /// composer anchored at the bottom. The optimized Markdown itself lives in the artifact panel.
 struct PromptChatPanel: View {
@@ -52,7 +35,8 @@ struct PromptChatPanel: View {
                     if let request = model.activeRequest, request.sessionID == model.session.id,
                        let startedAt = model.generationStartedAt {
                         GeneratingRow(engine: model.activeEngineTitle, startedAt: startedAt,
-                                      isRefinement: request.isRefinement, onCancel: model.cancel)
+                                      isRefinement: request.isRefinement, phase: model.generationPhase,
+                                      onCancel: model.cancel)
                     }
                     Color.clear.frame(height: 1).id("timeline-bottom")
                 }
@@ -257,6 +241,8 @@ private struct GeneratingRow: View {
     let engine: String
     let startedAt: Date
     let isRefinement: Bool
+    /// The runtime's real phase for local models ("Loading … into memory…"); nil for Apple Intelligence.
+    var phase: String?
     let onCancel: () -> Void
 
     var body: some View {
@@ -265,7 +251,7 @@ private struct GeneratingRow: View {
             ProgressView()
                 .controlSize(.small)
             TimelineView(.periodic(from: startedAt, by: 1)) { context in
-                Text("\(isRefinement ? "Revising" : "Optimizing") with \(engine) · \(max(0, Int(context.date.timeIntervalSince(startedAt))))s")
+                Text("\(phase ?? "\(isRefinement ? "Revising" : "Optimizing") with \(engine)") · \(max(0, Int(context.date.timeIntervalSince(startedAt))))s")
                     .monospacedDigit()
             }
             .font(.subheadline)
@@ -388,44 +374,39 @@ private struct EngineMenu: View {
 
     var body: some View {
         Menu {
-            Picker("Engine", selection: $model.engine) {
-                ForEach(PromptEngineKind.allCases) { engine in
-                    Label(engine.title, systemImage: engine.symbol).tag(engine)
+            Picker("Model", selection: $model.engine) {
+                Label("Apple Intelligence", systemImage: "apple.logo").tag(EngineChoice.apple)
+                ForEach(model.localModels.filter(\.isUsable)) { local in
+                    Label("\(local.name) — \(local.summary)", systemImage: local.family == .museGlimmer ? "sparkles" : "cpu")
+                        .tag(EngineChoice.local(local.id))
                 }
             }
             .pickerStyle(.inline)
-            if model.engine.isLocalOllama {
-                if model.matchingTags.isEmpty {
-                    Text(model.localServerReachable ? "No matching model installed" : "Ollama is not running")
-                } else {
-                    Picker("Installed model", selection: localSelection) {
-                        ForEach(model.matchingTags, id: \.self) { Text($0).tag($0) }
+            let unavailable = model.localModels.filter { !$0.isUsable }
+            if !unavailable.isEmpty || !model.hasMuseGlimmer {
+                Section("Not available on this Mac") {
+                    ForEach(unavailable) { local in
+                        Button("\(local.name) — \(local.status.explanation)") {}.disabled(true)
                     }
-                    .pickerStyle(.inline)
+                    if !model.hasMuseGlimmer {
+                        Button("Muse Glimmer — not installed. Add its weights to your models folder.") {}.disabled(true)
+                    }
                 }
             }
             Divider()
-            Button("Refresh Local Models", systemImage: "arrow.clockwise") {
+            Button(model.modelsFolder == nil ? "Choose Models Folder…" : "Change Models Folder…",
+                   systemImage: "folder") { model.chooseModelsFolder() }
+            Button("Rescan Models", systemImage: "arrow.clockwise") {
                 Task { await model.refreshLocalModels() }
             }
         } label: {
-            Label(model.engine.shortTitle, systemImage: model.engine.symbol)
+            Label(model.engineTitle, systemImage: model.engineSymbol)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
         .disabled(model.isGenerating)
-        .help("Choose the local model")
-        .accessibilityLabel("Model: \(model.engine.title)")
-    }
-
-    private var localSelection: Binding<String> {
-        Binding(
-            get: { model.selectedLocalTag ?? "" },
-            set: { value in
-                if model.engine == .qwen { model.chosenQwenTag = value }
-                if model.engine == .glimmer { model.chosenGlimmerTag = value }
-            }
-        )
+        .help("Choose Apple Intelligence or a model that runs inside Prompt Studio")
+        .accessibilityLabel("Model: \(model.engineTitle)")
     }
 }
 

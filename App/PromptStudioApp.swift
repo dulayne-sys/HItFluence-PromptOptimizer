@@ -75,8 +75,9 @@ struct StudioCommands: Commands {
             }
             Divider()
             Picker("Model", selection: Binding(get: { model.engine }, set: { model.engine = $0 })) {
-                ForEach(PromptEngineKind.allCases) { engine in
-                    Text(engine.title).tag(engine)
+                Text("Apple Intelligence").tag(EngineChoice.apple)
+                ForEach(model.localModels.filter(\.isUsable)) { local in
+                    Text(local.name).tag(EngineChoice.local(local.id))
                 }
             }
             .disabled(model.isGenerating)

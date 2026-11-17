@@ -102,9 +102,27 @@ config_project=obj('config:list:project')
 config_target=obj('config:list:target')
 configs={t:{mode:obj(f'config:{t}:{mode}') for mode in ['Debug','Release']} for t in ['project','target']}
 
+# Swift packages for in-app local inference (Core AI + MLX). Exact pins match HitSwap's Package.resolved,
+# which runs these models on this Mac today.
+packages=[
+    ('coreai-models','https://github.com/apple/coreai-models.git','1.0.0',['CoreAILM']),
+    ('mlx-swift-lm','https://github.com/ml-explore/mlx-swift-lm','3.32.3',['MLXLLM','MLXVLM','MLXLMCommon']),
+    ('swift-transformers','https://github.com/huggingface/swift-transformers','1.3.5',['Tokenizers']),
+]
+frameworks_phase=obj('phase:frameworks')
+bundle_model_phase=obj('phase:script:bundle-coreai-model')
+def pkgid(name): return obj('package:'+name)
+def productid(name): return obj('product:'+name)
+def productbuildid(name): return obj('buildfile:product:'+name)
+products=[(pkg,prod) for pkg,_,_,prods in packages for prod in prods]
+product_dependency_list=' '.join(f'{productid(prod)} /* {prod} */,' for _,prod in products)
+package_reference_list=' '.join(f'{pkgid(pkg)} /* XCRemoteSwiftPackageReference "{pkg}" */,' for pkg,_,_,_ in packages)
+
 for p in sources:
     add(f'\t\t{buildid(p)} /* {p.name} in Sources */ = {{isa = PBXBuildFile; fileRef = {refid(p)} /* {p.name} */; }};')
 add(f'\t\t{assets_build} /* Assets.xcassets in Resources */ = {{isa = PBXBuildFile; fileRef = {assets_ref} /* Assets.xcassets */; }};')
+for pkg,prod in products:
+    add(f'\t\t{productbuildid(prod)} /* {prod} in Frameworks */ = {{isa = PBXBuildFile; productRef = {productid(prod)} /* {prod} */; }};')
 
 refs=[]
 for p in sources:
@@ -163,6 +181,8 @@ for mode in ['Debug','Release']:
         'ENABLE_HARDENED_RUNTIME':'YES','SWIFT_EMIT_LOC_STRINGS':'YES',
         'SUPPORTED_PLATFORMS':'macosx',
         'LD_RUNPATH_SEARCH_PATHS':'$(inherited) @executable_path/../Frameworks',
+        # The model-bundling script reads ~/Models (outside the source tree).
+        'ENABLE_USER_SCRIPT_SANDBOXING':'NO',
     }
     def format_config(cid,name,settings):
         lines='\n'.join(f'\t\t\t\t{k} = {quote(v)};' for k,v in sorted(settings.items()))
@@ -174,9 +194,28 @@ config_list_lines=[
  f'''\t\t{config_project} /* Build configuration list for PBXProject "PromptStudio" */ = {{isa = XCConfigurationList; buildConfigurations = ( {configs['project']['Debug']} /* Debug */, {configs['project']['Release']} /* Release */ ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; }};''',
  f'''\t\t{config_target} /* Build configuration list for PBXNativeTarget "PromptStudio" */ = {{isa = XCConfigurationList; buildConfigurations = ( {configs['target']['Debug']} /* Debug */, {configs['target']['Release']} /* Release */ ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; }};'''
 ]
-proj=f'''\t\t{project} /* Project object */ = {{isa = PBXProject; attributes = {{ BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 2730; TargetAttributes = {{ {target} = {{ CreatedOnToolsVersion = 27.3; }}; }}; }}; buildConfigurationList = {config_project} /* Build configuration list for PBXProject "PromptStudio" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = ( en, Base ); mainGroup = {main_group}; productRefGroup = {products_group}; projectDirPath = ""; projectRoot = ""; targets = ( {target} /* PromptStudio */, ); }};'''
+proj=f'''\t\t{project} /* Project object */ = {{isa = PBXProject; attributes = {{ BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 2730; TargetAttributes = {{ {target} = {{ CreatedOnToolsVersion = 27.3; }}; }}; }}; buildConfigurationList = {config_project} /* Build configuration list for PBXProject "PromptStudio" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = ( en, Base ); mainGroup = {main_group}; packageReferences = ( {package_reference_list} ); productRefGroup = {products_group}; projectDirPath = ""; projectRoot = ""; targets = ( {target} /* PromptStudio */, ); }};'''
 
-native=f'''\t\t{target} /* PromptStudio */ = {{isa = PBXNativeTarget; buildConfigurationList = {config_target} /* Build configuration list for PBXNativeTarget "PromptStudio" */; buildPhases = ( {sources_phase} /* Sources */, {resources_phase} /* Resources */, ); buildRules = (); dependencies = (); name = PromptStudio; productName = PromptStudio; productReference = {product} /* PromptStudio.app */; productType = "com.apple.product-type.application"; }};'''
+native=f'''\t\t{target} /* PromptStudio */ = {{isa = PBXNativeTarget; buildConfigurationList = {config_target} /* Build configuration list for PBXNativeTarget "PromptStudio" */; buildPhases = ( {sources_phase} /* Sources */, {frameworks_phase} /* Frameworks */, {resources_phase} /* Resources */, {bundle_model_phase} /* Bundle Core AI model */, ); buildRules = (); dependencies = (); name = PromptStudio; packageProductDependencies = ( {product_dependency_list} ); productName = PromptStudio; productReference = {product} /* PromptStudio.app */; productType = "com.apple.product-type.application"; }};'''
+
+frameworks_files='\n'.join(f'\t\t\t\t{productbuildid(prod)} /* {prod} in Frameworks */,' for _,prod in products)
+phase_frameworks=f'''\t\t{frameworks_phase} /* Frameworks */ = {{isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (\n{frameworks_files}\n\t\t\t); runOnlyForDeploymentPostprocessing = 0; }};'''
+# Copies the Core AI Qwen3-1.7B export into the app so a local model works with no setup (as KEV ships it).
+# Weights are never committed to git; set PROMPTSTUDIO_BUNDLED_MODEL to use another export.
+bundle_script='''set -eu
+SRC="${PROMPTSTUDIO_BUNDLED_MODEL:-$HOME/Models/CoreAI/qwen3-1.7b}"
+DEST="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Models/$(basename "$SRC")"
+if [ -f "$SRC/metadata.json" ]; then
+  mkdir -p "$(dirname "$DEST")"
+  rsync -a --delete "$SRC/" "$DEST/"
+  echo "Bundled Core AI model from $SRC"
+else
+  echo "warning: No Core AI model at $SRC. Building without a bundled local model."
+fi
+'''
+phase_bundle_model=f'''\t\t{bundle_model_phase} /* Bundle Core AI model */ = {{isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputFileListPaths = (); inputPaths = (); name = "Bundle Core AI model"; outputFileListPaths = (); outputPaths = (); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = {quote(bundle_script).replace(chr(10), chr(92)+'n')}; showEnvVarsInLog = 0; }};'''
+package_reference_lines='\n'.join(f'''\t\t{pkgid(pkg)} /* XCRemoteSwiftPackageReference "{pkg}" */ = {{isa = XCRemoteSwiftPackageReference; repositoryURL = {quote(url)}; requirement = {{ kind = exactVersion; version = {version}; }}; }};''' for pkg,url,version,_ in packages)
+product_dependency_lines='\n'.join(f'''\t\t{productid(prod)} /* {prod} */ = {{isa = XCSwiftPackageProductDependency; package = {pkgid(pkg)} /* XCRemoteSwiftPackageReference "{pkg}" */; productName = {prod}; }};''' for pkg,prod in products)
 
 pbx=f'''// !$*UTF8*$!
 {{
@@ -217,6 +256,22 @@ pbx=f'''// !$*UTF8*$!
 {chr(10).join(config_project_lines)}
 {chr(10).join(config_target_lines)}
 /* End XCBuildConfiguration section */
+
+/* Begin PBXFrameworksBuildPhase section */
+{phase_frameworks}
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+{phase_bundle_model}
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+{package_reference_lines}
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+{product_dependency_lines}
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 {chr(10).join(config_list_lines)}

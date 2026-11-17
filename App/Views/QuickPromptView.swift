@@ -23,9 +23,10 @@ struct QuickPromptView: View {
                     .buttonStyle(.borderless)
                     .help("Open main window")
             }
-            Picker("Engine", selection: $model.engine) {
-                ForEach(PromptEngineKind.allCases) { option in
-                    Text(option.title).tag(option)
+            Picker("Model", selection: $model.engine) {
+                Text("Apple Intelligence").tag(EngineChoice.apple)
+                ForEach(model.localModels.filter(\.isUsable)) { local in
+                    Text(local.name).tag(EngineChoice.local(local.id))
                 }
             }
             TextEditor(text: $model.input)

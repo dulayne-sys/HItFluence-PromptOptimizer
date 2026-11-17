@@ -1,5 +1,25 @@
 # Build and validation status — 2026-11-17 (owner's Mac, Xcode 27.3 beta)
 
+## In-app local models (branch `feature/in-app-local-models`)
+
+Qwen runs **inside Prompt Studio**, with no Ollama or other server. Core AI bundles go through FoundationModels' `LanguageModelSession`; MLX weights go through mlx-swift-lm's `ChatSession`. The package pins match HitSwap exactly: `apple/coreai-models` 1.0.0, `ml-explore/mlx-swift-lm` 3.32.3 (mlx-swift 0.32.3), `huggingface/swift-transformers` 1.3.5.
+
+| Check | Result |
+|---|---|
+| Xcode 27.3 build, Debug and Release | **Passed.** 0 errors and 0 warnings in app code (MLX's own Metal headers emit C++17 notices), MacOSX27.3.sdk |
+| Unit tests | **48 passed, 0 failed.** Adds the local-model catalog (Core AI/MLX detection, TTS skipped, too-large, unsupported, missing files, Glimmer, bundled de-duplication) and `<think>` stripping |
+| Bundled model | The "Bundle Core AI model" build step copies `~/Models/CoreAI/qwen3-1.7b` (943 MB) into `Contents/Resources/Models`. The app is 1.0 GB |
+| **Sandboxed app, bundled Qwen3-1.7B (Core AI)** | **Passed** (`-PromptStudioSelfTest`, Debug only): 22.9 s on first use (compile cached in the app container), **11.5 s warm** |
+| Qwen3-1.7B from the models folder (Core AI) | **Passed:** 22.4 s, all literals preserved |
+| **Qwen2.5-14B-Instruct-4bit (MLX)** | **Passed:** 38.2 s including loading 8.3 GB of weights on the 16 GB M4; all literals preserved |
+| Qwen3.6-27B / 35B (backup folder) | **Refused before loading:** "Needs about 11.77 GB of memory; this Mac has 16 GB" |
+| Cancel during a local generation | **Passed:** `CancellationError` |
+| UI with real local generations | Captured: model menu, real "Loading … into memory · Ns" phase, a 14B follow-up proposal, Settings › Local models |
+| Muse Glimmer | **Not on disk.** The runtime supports `muse_glimmer` (MLX vision); the app shows "not installed" |
+| Folder access in the sandbox | The picker is implemented with an app-scoped bookmark, read-only. **Not yet clicked through by hand**; the harness supplied the folder directly |
+
+Models are listed only if they're found on disk. Each is checked against 60% of physical memory, using weights plus about 15% overhead, and only one model is kept in memory at a time.
+
 ## Aurora chat workspace (branch `feature/aurora-chat-workspace`)
 
 | Area | Status | Evidence |

@@ -33,13 +33,48 @@ struct SettingsView: View {
             }
             Section("Local models") {
                 LabeledContent("Apple Intelligence", value: AppleModelClient.modelStatus())
-                LabeledContent("Ollama (127.0.0.1)", value: model.localServerReachable
-                               ? "Connected · \(model.availableLocalTags.count) models" : "Not running")
-                Button("Refresh Local Models") { Task { await model.refreshLocalModels() } }
+                LabeledContent("Models folder") {
+                    Text(model.modelsFolder?.path(percentEncoded: false) ?? "Not chosen")
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                }
+                HStack {
+                    Button(model.modelsFolder == nil ? "Choose Folder…" : "Change Folder…") { model.chooseModelsFolder() }
+                    Button("Rescan") { Task { await model.refreshLocalModels() } }
+                    if model.modelsFolder != nil {
+                        Button("Forget Folder") { model.forgetModelsFolder() }
+                    }
+                    Spacer()
+                    Button("Unload From Memory") { model.unloadLocalModel() }
+                        .help("Free the memory used by the last local model")
+                }
+                if model.localModels.isEmpty {
+                    Text(model.isScanningModels ? "Looking for models…" : "No local models found yet.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(model.localModels) { local in
+                    LabeledContent {
+                        Text(local.isUsable ? "Ready" : local.status.explanation)
+                            .foregroundStyle(local.isUsable ? Color.secondary : HFBrand.coral)
+                            .multilineTextAlignment(.trailing)
+                    } label: {
+                        Text(local.name)
+                        Text(local.summary).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if !model.hasMuseGlimmer {
+                    Text("Muse Glimmer isn't installed. Add its MLX weights to your models folder and choose Rescan; it runs in-app with the MLX vision runtime when this Mac has enough memory.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Models run inside Prompt Studio with Core AI or MLX. Prompts never leave this Mac, and no Ollama or other server is used.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 560)
+        .frame(width: 560, height: 640)
     }
 }
 

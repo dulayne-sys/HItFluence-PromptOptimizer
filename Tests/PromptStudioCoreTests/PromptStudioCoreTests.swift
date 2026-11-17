@@ -38,14 +38,6 @@ final class PromptStudioCoreTests: XCTestCase {
         XCTAssertTrue(PromptValidator.inspect(source: "test", generated: "").hasWarnings)
     }
 
-    func testKnownLocalModelTagsAreDiscovered() {
-        let tags = ["qwen2.5-coder:14b", "muse-glimmer:30b-mlx", "qwen3:8b-instruct", "other:latest"]
-        let qwen = LocalModelDiscovery.suitableTags(for: .qwen, among: tags)
-        let glimmer = LocalModelDiscovery.suitableTags(for: .glimmer, among: tags)
-        XCTAssertEqual(qwen.first, "qwen3:8b-instruct")
-        XCTAssertEqual(glimmer, ["muse-glimmer:30b-mlx"])
-    }
-
     func testPathsStopAtTrailingWordsAndIgnoreURLInternals() {
         // Reproduces a false "missing" warning seen with live Apple Intelligence output on macOS 27.3.
         let input = "fix /Users/me/Code/App/Editor.swift before 2026-12-01, see https://developer.apple.com/documentation/foundationmodels and /Volumes/Test Drive/Code/Main.swift now"
