@@ -38,12 +38,28 @@ final class PromptStudioCoreTests: XCTestCase {
         XCTAssertTrue(PromptValidator.inspect(source: "test", generated: "").hasWarnings)
     }
 
-    func testKnownLocalModelTagsAreDiscovered() {
-        let tags = ["qwen2.5-coder:14b", "muse-glimmer:30b-mlx", "qwen3:8b-instruct", "other:latest"]
-        let qwen = LocalModelDiscovery.suitableTags(for: .qwen, among: tags)
-        let glimmer = LocalModelDiscovery.suitableTags(for: .glimmer, among: tags)
-        XCTAssertEqual(qwen.first, "qwen3:8b-instruct")
-        XCTAssertEqual(glimmer, ["muse-glimmer:30b-mlx"])
+    func testPathsStopAtTrailingWordsAndIgnoreURLInternals() {
+        // Reproduces a false "missing" warning seen with live Apple Intelligence output on macOS 27.3.
+        let input = "fix /Users/me/Code/App/Editor.swift before 2026-12-01, see https://developer.apple.com/documentation/foundationmodels and /Volumes/Test Drive/Code/Main.swift now"
+        let values = PromptValidator.collectProtectedStrings(input)
+        XCTAssertTrue(values.contains("/Users/me/Code/App/Editor.swift"))
+        XCTAssertTrue(values.contains("/Volumes/Test Drive/Code/Main.swift"))
+        XCTAssertFalse(values.contains { $0.hasSuffix(" before") || $0.contains(" before 2026") || $0.hasSuffix(" now") })
+        XCTAssertFalse(values.contains { $0.hasPrefix("/developer.apple.com") || $0.hasPrefix("//") })
+
+        let faithful = """
+        1. Fix the build in `/Users/me/Code/App/Editor.swift` before 2026-12-01.
+        2. Refer to: https://developer.apple.com/documentation/foundationmodels.
+        3. Then update /Volumes/Test Drive/Code/Main.swift.
+        """
+        XCTAssertEqual(PromptValidator.inspect(source: input, generated: faithful).missingExactStrings, [])
+    }
+
+    func testCancellationIsRecognizedFromTaskAndURLSession() {
+        XCTAssertTrue(GenerationCancellation.isCancellation(CancellationError()))
+        XCTAssertTrue(GenerationCancellation.isCancellation(URLError(.cancelled)))
+        XCTAssertFalse(GenerationCancellation.isCancellation(URLError(.cannotConnectToHost)))
+        XCTAssertFalse(GenerationCancellation.isCancellation(CocoaError(.fileNoSuchFile)))
     }
 
     func testInputEnvelopedAsData() {

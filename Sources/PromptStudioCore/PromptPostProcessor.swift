@@ -3,6 +3,10 @@ import Foundation
 public enum PromptPostProcessor {
     public static func render(_ modelText: String, source: String, includeOriginal: Bool) -> String {
         var body = modelText.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Reasoning models (Qwen3) may emit a leading <think>…</think> block; it is not part of the prompt.
+        if body.hasPrefix("<think>"), let end = body.range(of: "</think>") {
+            body = String(body[end.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         if body.hasPrefix("```markdown\n") && body.hasSuffix("```") {
             body = String(body.dropFirst("```markdown\n".count).dropLast(3))
                 .trimmingCharacters(in: .whitespacesAndNewlines)

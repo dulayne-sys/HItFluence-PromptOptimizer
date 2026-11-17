@@ -14,8 +14,8 @@ The initial publisher inventory follows the user's private HitCode repository `S
 | Hugging Face | https://huggingface.co/blog/feed.xml | Enabled |
 | GitHub Blog | https://github.blog/feed/ | Enabled |
 | GitHub Security | https://github.blog/security/feed/ | Enabled |
-| OpenAI | https://openai.com/news/rss.xml | Disabled pending validation |
-| GitHub Changelog | https://github.blog/changelog/feed/ | Disabled pending validation |
+| OpenAI | https://openai.com/news/rss.xml | Disabled by default (feed validated 2026-11-17) |
+| GitHub Changelog | https://github.blog/changelog/feed/ | Disabled by default (feed validated 2026-11-17) |
 
 **Publisher-only shortcuts, without any automatic feed scraping:** https://www.superhuman.ai/ and https://codenewsletter.ai/.
 
@@ -27,7 +27,7 @@ The initial publisher inventory follows the user's private HitCode repository `S
 - **Parsing:** RSS/Atom headline, destination URL, publication date and first 200 plain text summary characters. No full-page fetching.
 - **Cache:** Application Support JSON, atomic write, 160 article limit, saved IDs preserved across refresh.
 - **Provenance:** publishers and links accompany headlines. URL must be HTTPS; failed feeds do not create synthetic stories.
-- **Security:** user opens links in a nonpersistent WebKit viewer. News retrieval is separate from Ollama/Apple model requests.
+- **Security:** user opens links in a nonpersistent WebKit viewer. News retrieval is separate from model inference, which runs on this Mac.
 
 ## Known v1 limitations
 

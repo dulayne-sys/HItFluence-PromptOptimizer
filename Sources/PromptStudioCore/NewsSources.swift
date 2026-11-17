@@ -7,6 +7,8 @@ enum NewsTopic: String, CaseIterable, Identifiable, Codable, Sendable {
     case ai = "AI Models"
     case coding = "Coding"
     case security = "Security"
+    /// Stories the user bookmarked; available offline from the metadata cache.
+    case saved = "Saved"
     var id: String { rawValue }
 }
 
@@ -46,4 +48,6 @@ struct NewsItem: Identifiable, Codable, Hashable, Sendable {
     let summary: String
     let date: Date?
     let topics: [NewsTopic]
+    /// Publisher-provided image from Media RSS or an image enclosure (HTTPS only). Optional so older caches decode.
+    var imageURL: URL? = nil
 }

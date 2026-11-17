@@ -1,117 +1,434 @@
 import SwiftUI
 
+/// The conversational workspace: a threaded timeline for discussing and refining the prompt, with the
+/// composer anchored at the bottom. The optimized Markdown itself lives in the artifact panel.
 struct PromptChatPanel: View {
+    @Bindable var model: StudioModel
+    var isFocused = false
+    var onToggleFocus: () -> Void = {}
+    var onShowArtifact: () -> Void = {}
+    @FocusState private var composerFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ConversationHeader(model: model, isFocused: isFocused, onToggleFocus: onToggleFocus)
+            Rectangle().fill(HFBrand.separator).frame(height: 1)
+            timeline
+            ComposerView(model: model, focused: $composerFocused)
+        }
+        .onAppear { composerFocused = true }
+        .onChange(of: model.currentSessionID) { composerFocused = true }
+    }
+
+    private var timeline: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 18) {
+                    if model.session.messages.isEmpty {
+                        ConversationWelcome(model: model)
+                    }
+                    ForEach(model.session.messages) { message in
+                        MessageRow(message: message, model: model, onShowArtifact: onShowArtifact)
+                            .id(message.id)
+                    }
+                    if let request = model.activeRequest, request.sessionID == model.session.id,
+                       let startedAt = model.generationStartedAt {
+                        GeneratingRow(engine: model.activeEngineTitle, startedAt: startedAt,
+                                      isRefinement: request.isRefinement, phase: model.generationPhase,
+                                      onCancel: model.cancel)
+                    }
+                    Color.clear.frame(height: 1).id("timeline-bottom")
+                }
+                .frame(maxWidth: 760, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 22)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollContentBackground(.hidden)
+            .onChange(of: model.session.messages.count) { scrollToBottom(proxy) }
+            .onChange(of: model.isGenerating) { scrollToBottom(proxy) }
+            .onAppear { proxy.scrollTo("timeline-bottom", anchor: .bottom) }
+        }
+    }
+
+    private func scrollToBottom(_ proxy: ScrollViewProxy) {
+        if reduceMotion {
+            proxy.scrollTo("timeline-bottom", anchor: .bottom)
+        } else {
+            withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo("timeline-bottom", anchor: .bottom) }
+        }
+    }
+}
+
+private struct ConversationHeader: View {
+    let model: StudioModel
+    let isFocused: Bool
+    let onToggleFocus: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.session.title.isEmpty ? "New prompt" : model.session.title)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(summary)
+                    .font(.caption)
+                    .foregroundStyle(HFBrand.muted)
+            }
+            Spacer(minLength: 8)
+            Button("New Prompt", systemImage: "square.and.pencil") { model.newSession() }
+                .disabled(model.isGenerating)
+                .help("Start a new prompt session (⌘N)")
+            Button(isFocused ? "Restore Layout" : "Focus Chat",
+                   systemImage: isFocused ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+                   action: onToggleFocus)
+                .help(isFocused ? "Restore the workspace panels" : "Focus on the conversation")
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+    }
+
+    private var summary: String {
+        let versions = model.session.versions.count
+        let messages = model.session.messages.filter { $0.role != .notice }.count
+        if messages == 0 { return "Describe what your agent should do" }
+        return "\(messages) message\(messages == 1 ? "" : "s") · \(versions) version\(versions == 1 ? "" : "s")"
+    }
+}
+
+private struct ConversationWelcome: View {
+    let model: StudioModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                HFHashtag(size: 40)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Your prompt, upgraded.")
+                        .font(.title3.weight(.semibold))
+                    Text("Describe the task naturally. The optimized Markdown appears in the artifact panel; reply here to refine it without losing earlier versions.")
+                        .font(.subheadline)
+                        .foregroundStyle(HFBrand.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Text("Nothing leaves this Mac: prompts go only to the model you select.")
+                .font(.caption)
+                .foregroundStyle(HFBrand.periwinkle)
+        }
+        .padding(18)
+        .background(HFBrand.panelRaised.opacity(0.7), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(HFBrand.separator))
+    }
+}
+
+private struct MessageRow: View {
+    let message: ChatMessage
+    let model: StudioModel
+    let onShowArtifact: () -> Void
+
+    var body: some View {
+        switch message.role {
+        case .user:
+            HStack {
+                Spacer(minLength: 56)
+                Text(message.text)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 15)
+                    .padding(.vertical, 11)
+                    .background(HFBrand.blue.opacity(0.28), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(HFBrand.blue.opacity(0.35)))
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("You: \(message.text)")
+        case .assistant:
+            HStack(alignment: .top, spacing: 12) {
+                if message.isError {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.title3)
+                        .foregroundStyle(HFBrand.coral)
+                        .frame(width: 30)
+                } else {
+                    HFHashtag(size: 30)
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(message.text)
+                        .textSelection(.enabled)
+                        .foregroundStyle(message.isError ? HFBrand.coral : Color.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let id = message.versionID, let version = model.session.version(id) {
+                        VersionChip(version: version, model: model, onShowArtifact: onShowArtifact)
+                    }
+                }
+                .padding(message.isError ? 12 : 0)
+                .background(message.isError ? HFBrand.coral.opacity(0.10) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Spacer(minLength: 32)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(message.isError ? "Error: \(message.text)" : "Prompt Studio: \(message.text)")
+        case .notice:
+            Text(message.text)
+                .font(.caption)
+                .foregroundStyle(HFBrand.muted)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+}
+
+private struct VersionChip: View {
+    let version: ArtifactVersion
+    let model: StudioModel
+    let onShowArtifact: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "doc.richtext")
+                .foregroundStyle(HFBrand.mint)
+            Text("Version \(version.number)")
+                .font(.subheadline.weight(.semibold))
+            Text(state)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(stateColor.opacity(0.18), in: Capsule())
+                .foregroundStyle(stateColor)
+            Spacer(minLength: 8)
+            Button("View") {
+                model.show(versionID: version.id)
+                onShowArtifact()
+            }
+            if version.state == .proposed {
+                Button("Discard") { model.discard(version) }
+                Button("Apply") { model.accept(version) }
+                    .buttonStyle(.borderedProminent)
+                    .tint(HFBrand.blue)
+            }
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .padding(10)
+        .background(HFBrand.panel.opacity(0.8), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(HFBrand.separator))
+        .frame(maxWidth: 460, alignment: .leading)
+    }
+
+    private var state: String {
+        if version.id == model.session.currentVersionID { return "Current" }
+        switch version.state {
+        case .proposed: return "Proposed"
+        case .discarded: return "Discarded"
+        case .accepted: return "Earlier"
+        }
+    }
+
+    private var stateColor: Color {
+        if version.id == model.session.currentVersionID { return HFBrand.mint }
+        switch version.state {
+        case .proposed: return HFBrand.lavender
+        case .discarded: return HFBrand.muted
+        case .accepted: return HFBrand.periwinkle
+        }
+    }
+}
+
+/// Shown only while an engine call is actually in flight; the timer is real elapsed time.
+private struct GeneratingRow: View {
+    let engine: String
+    let startedAt: Date
+    let isRefinement: Bool
+    /// The runtime's real phase for local models ("Loading … into memory…"); nil for Apple Intelligence.
+    var phase: String?
+    let onCancel: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            HFHashtag(size: 30)
+            ProgressView()
+                .controlSize(.small)
+            TimelineView(.periodic(from: startedAt, by: 1)) { context in
+                Text("\(phase ?? "\(isRefinement ? "Revising" : "Optimizing") with \(engine)") · \(max(0, Int(context.date.timeIntervalSince(startedAt))))s")
+                    .monospacedDigit()
+            }
+            .font(.subheadline)
+            .foregroundStyle(HFBrand.muted)
+            Spacer()
+            Button("Stop", systemImage: "stop.circle", action: onCancel)
+                .buttonStyle(.borderless)
+                .help("Stop generating (⌘.)")
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(isRefinement ? "Revising" : "Optimizing") with \(engine)")
+    }
+}
+
+private struct ComposerView: View {
+    @Bindable var model: StudioModel
+    var focused: FocusState<Bool>.Binding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ViewThatFits(in: .horizontal) {
+                controlsRow(compactStatus: false)
+                controlsRow(compactStatus: true)
+            }
+            .controlSize(.small)
+
+            ZStack(alignment: .topLeading) {
+                if model.input.isEmpty {
+                    Text(placeholder)
+                        .foregroundStyle(HFBrand.muted.opacity(0.75))
+                        .padding(.horizontal, 13)
+                        .padding(.vertical, 10)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+                TextEditor(text: $model.input)
+                    .font(.body)
+                    .scrollContentBackground(.hidden)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .frame(height: editorHeight)
+                    .focused(focused)
+                    .accessibilityLabel(model.session.currentVersion == nil ? "Prompt to optimize" : "Follow-up instruction")
+            }
+            .background(HFBrand.ink.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(focused.wrappedValue ? HFBrand.periwinkle.opacity(0.65) : HFBrand.separator, lineWidth: 1))
+
+            HStack(spacing: 10) {
+                Button("Paste", systemImage: "doc.on.clipboard") { model.importClipboard() }
+                    .buttonStyle(.borderless)
+                    .help("Paste the clipboard into the composer")
+                if model.session.currentVersion == nil {
+                    Toggle("Append original", isOn: $model.includeOriginal)
+                        .toggleStyle(.checkbox)
+                        .help("Append the original request verbatim to Version 1")
+                }
+                Spacer()
+                Text(model.isGenerating ? "⌘. to stop" : "⌘↩ to send")
+                    .foregroundStyle(HFBrand.muted)
+                if model.isGenerating {
+                    Button("Stop", systemImage: "stop.fill") { model.cancel() }
+                        .buttonStyle(.bordered)
+                } else {
+                    Button(model.session.currentVersion == nil ? "Optimize" : "Refine", systemImage: "arrow.up.circle.fill") {
+                        model.send()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(HFBrand.blue)
+                    .disabled(!model.canOptimize)
+                }
+            }
+            .font(.caption)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(HFBrand.panelRaised.opacity(0.55))
+    }
+
+    private func controlsRow(compactStatus: Bool) -> some View {
+        HStack(spacing: 6) {
+            EngineMenu(model: model)
+            Picker("Profile", selection: $model.profile) {
+                ForEach(PromptProfile.allCases) { profile in
+                    Label(profile.title, systemImage: profile.icon).tag(profile)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .fixedSize()
+            .help("Target agent profile")
+            Picker("Detail", selection: $model.detail) {
+                ForEach(PromptDetail.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .fixedSize()
+            .help("Focused or detailed output")
+            Spacer(minLength: 4)
+            AvailabilityPill(availability: model.engineAvailability, compact: compactStatus)
+        }
+    }
+
+    private var placeholder: String {
+        model.session.currentVersion == nil
+            ? "Paste agent instructions or describe a task…"
+            : "Ask for a change — e.g. “add acceptance criteria” or “make it shorter”…"
+    }
+
+    private var editorHeight: CGFloat {
+        let lines = model.input.split(separator: "\n", omittingEmptySubsequences: false).count
+        return min(190, max(62, CGFloat(lines) * 19 + 26))
+    }
+}
+
+private struct EngineMenu: View {
     @Bindable var model: StudioModel
 
     var body: some View {
-        HFGlassPanel {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Label("YOUR PROMPT", systemImage: "bubble.left.and.text.bubble.right")
-                        .font(.caption.weight(.bold))
-                        .tracking(1.0)
-                    Spacer()
-                    Text("INPUT")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(HFBrand.periwinkle)
+        Menu {
+            Picker("Model", selection: $model.engine) {
+                Label("Apple Intelligence", systemImage: "apple.logo").tag(EngineChoice.apple)
+                ForEach(model.localModels.filter(\.isUsable)) { local in
+                    Label("\(local.name) — \(local.summary)", systemImage: local.family == .museGlimmer ? "sparkles" : "cpu")
+                        .tag(EngineChoice.local(local.id))
                 }
-                .foregroundStyle(HFBrand.muted)
-                .padding(22)
-
-                Rectangle().fill(HFBrand.separator).frame(height: 1)
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack(alignment: .top, spacing: 10) {
-                            HFHashtag(size: 31)
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Your prompt, upgraded.")
-                                    .font(.headline.weight(.semibold))
-                                Text("Describe the task naturally. I'll structure it for the agent you choose while keeping your original requirements intact.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(HFBrand.muted)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(15)
-                            .background(HFBrand.panelRaised, in: RoundedRectangle(cornerRadius: 15))
-                        }
-                        if !model.output.isEmpty {
-                            HStack(alignment: .top, spacing: 9) {
-                                Spacer(minLength: 24)
-                                Text(model.input)
-                                    .font(.subheadline)
-                                    .lineLimit(6)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(14)
-                                    .background(HFBrand.blue.opacity(0.21), in: RoundedRectangle(cornerRadius: 15))
-                                Image(systemName: "person.crop.circle.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(HFBrand.periwinkle)
-                            }
-                        }
+            }
+            .pickerStyle(.inline)
+            let unavailable = model.localModels.filter { !$0.isUsable }
+            if !unavailable.isEmpty || !model.hasMuseGlimmer {
+                Section("Not available on this Mac") {
+                    ForEach(unavailable) { local in
+                        Button("\(local.name) — \(local.status.explanation)") {}.disabled(true)
                     }
-                    .padding(20)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                VStack(alignment: .leading, spacing: 13) {
-                    HStack {
-                        HFEyebrow(title: "COMPOSE")
-                        Spacer()
-                        Button { model.importClipboard() } label: {
-                            Label("Paste", systemImage: "doc.on.clipboard")
-                        }
-                        .buttonStyle(.plain)
-                        .font(.caption)
-                        .foregroundStyle(HFBrand.periwinkle)
-                        .disabled(model.isGenerating)
-                    }
-                    ZStack(alignment: .topLeading) {
-                        RoundedRectangle(cornerRadius: 13)
-                            .fill(HFBrand.ink.opacity(0.60))
-                        if model.input.isEmpty {
-                            Text("Paste your agent instructions or type a new prompt…")
-                                .font(.body)
-                                .foregroundStyle(HFBrand.muted.opacity(0.70))
-                                .padding(14)
-                                .allowsHitTesting(false)
-                        }
-                        TextEditor(text: $model.input)
-                            .font(.body)
-                            .scrollContentBackground(.hidden)
-                            .padding(8)
-                            .frame(minHeight: 130)
-                            .disabled(model.isGenerating)
-                            .accessibilityLabel("Original prompt input")
-                    }
-                    .frame(minHeight: 138)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 13)
-                            .stroke(HFBrand.separator, lineWidth: 1)
-                    }
-                    HStack {
-                        Text("⌘ Return to optimize")
-                            .font(.caption)
-                            .foregroundStyle(HFBrand.muted)
-                        Spacer()
-                        if model.isGenerating {
-                            Button("Cancel", role: .cancel) { model.cancel() }
-                                .buttonStyle(.bordered)
-                        } else {
-                            Button { model.optimize() } label: {
-                                Label("Optimize Prompt", systemImage: "sparkles")
-                                    .font(.subheadline.weight(.semibold))
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(HFBrand.blue)
-                            .disabled(!model.canOptimize)
-                            .keyboardShortcut(.return, modifiers: [.command])
-                        }
+                    if !model.hasMuseGlimmer {
+                        Button("Muse Glimmer — not installed. Add its weights to your models folder.") {}.disabled(true)
                     }
                 }
-                .padding(20)
-                .background(HFBrand.panelRaised.opacity(0.60))
+            }
+            Divider()
+            Button(model.modelsFolder == nil ? "Choose Models Folder…" : "Change Models Folder…",
+                   systemImage: "folder") { model.chooseModelsFolder() }
+            Button("Rescan Models", systemImage: "arrow.clockwise") {
+                Task { await model.refreshLocalModels() }
+            }
+        } label: {
+            Label(model.engineTitle, systemImage: model.engineSymbol)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .disabled(model.isGenerating)
+        .help("Choose Apple Intelligence or a model that runs inside Prompt Studio")
+        .accessibilityLabel("Model: \(model.engineTitle)")
+    }
+}
+
+private struct AvailabilityPill: View {
+    let availability: EngineAvailability
+    var compact = false
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(availability.isReady ? HFBrand.mint : HFBrand.coral)
+                .frame(width: 7, height: 7)
+            if !compact {
+                Text(availability.summary)
+                    .lineLimit(1)
+                    .fixedSize()
             }
         }
+        .help(availability.summary)
+        .font(.caption)
+        .foregroundStyle(availability.isReady ? HFBrand.muted : HFBrand.coral)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Model status: \(availability.summary)")
     }
 }

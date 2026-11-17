@@ -2,7 +2,7 @@
 
 **Native Apple Silicon prompt-intelligence workspace** by HitFluence Media & Technology Group.
 
-> **Status:** Source implementation. The Foundation-only optimizer core and RSS/Atom parser have been tested under Swift 6.2.1 on Linux. The macOS app must still be built, signed, and visually verified with Xcode 27.3 beta on the owner's Mac. This repository does not contain a compiled `.app`.
+> **Status:** Builds on Xcode 27.3 beta (macOS 27.3 SDK) with 0 errors and 0 warnings; see `Documentation/BUILD_STATUS.md` for verified results and open items. Local models run inside the app: no Ollama or other server.
 
 A private-by-default desktop workspace that turns a rough request into an agent-ready Markdown prompt without losing constraints. Its redesigned Aurora interface pairs a chat-style input area with an editable Markdown output area, a branded editorial Home briefing, and expandable preview and web-browser windows.
 
@@ -20,8 +20,8 @@ A private-by-default desktop workspace that turns a rough request into an agent-
 The selected AI provider is always explicit:
 
 - **Apple Foundation Models:** System on-device model when available (no external model download in the app).
-- **Qwen Instruct:** Uses a user-installed local model exposed through Ollama on loopback (`127.0.0.1`). The model tag is discovered at runtime.
-- **Muse Glimmer:** Uses a user-installed local Muse Glimmer model exposed through Ollama on loopback. No remote inference endpoint is configured.
+- **Qwen (in-app):** Runs inside Prompt Studio with no server. Qwen3 1.7B (Core AI) is bundled in the app at build time from `~/Models/CoreAI/qwen3-1.7b`. Larger models such as Qwen2.5 14B (MLX) load from a models folder you choose once in Settings. Each is checked against this Mac's memory before it is offered.
+- **Muse Glimmer (in-app):** Supported by the bundled MLX vision runtime (`muse_glimmer`). It is shown as "not installed" until its MLX weights are in your models folder. No remote inference endpoint exists.
 
 A model that is unavailable reports an error; the application does not silently reroute prompts to another provider.
 
@@ -53,8 +53,8 @@ flowchart TD
     CHAT --> RULES[Versioned prompt instructions]
     RULES --> ROUTE{User-selected provider}
     ROUTE --> AFM[Apple Foundation Models, on device]
-    ROUTE --> QWEN[Local Qwen through Ollama loopback]
-    ROUTE --> GLIMMER[Local Glimmer through Ollama loopback]
+    ROUTE --> QWEN[Qwen in-app: Core AI or MLX]
+    ROUTE --> GLIMMER[Muse Glimmer in-app: MLX, when installed]
     AFM --> CHECK[Markdown render + preservation checks]
     QWEN --> CHECK
     GLIMMER --> CHECK
@@ -107,7 +107,8 @@ App/
     NewsFeedParser.swift       RSS/Atom metadata parser
     NewsStore.swift            Network consent, refresh, cache
     AppleModelClient.swift     On-device model bridge
-    LocalOllamaClient.swift    Loopback-only local model bridge
+    LocalModelRuntime.swift    In-app Core AI / MLX inference (one model resident)
+    ModelFolderAccess.swift    Security-scoped access to your models folder
     HistoryStore.swift         Opt-in local persistence
     MacActions.swift           Clipboard and export
 Sources/PromptStudioCore/       Pure Swift prompt rules and validation
